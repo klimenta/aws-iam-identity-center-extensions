@@ -16,7 +16,7 @@
   - [Using S3 interface for your use cases](#using-s3-interface-for-your-use-cases)
   - [Security](#security)
   - [License](#license)
-  - [This library is licensed under the MIT-0 License. See the LICENSE file.](#this-library-is-licensed-under-the-mit-0-license-see-the-license-file)
+  - [K.Andreev](#kandreev)
 
 ## Overview
 
@@ -369,4 +369,5 @@ See [CONTRIBUTING](CONTRIBUTING.md) for more information.
 ## License
 
 This library is licensed under the MIT-0 License. See the LICENSE file.
-----
+
+## K.Andreev
