@@ -2,27 +2,21 @@
 
 ## Table of Contents
 
-- [Overview](#Overview)
-- [How to Deploy](https://catalog.workshops.aws/ssoextensions/en-US)
-- [Features](#Features)
-
-  - [The Composite Permission Set API](#the-composite-permission-set-api)
-  - [Enterprise friendly account assignment life cycle](#enterprise-friendly-account-assignment-life-cycle)
-  - [Automated access change management for root, ou_id and account_tag scopes](#automated-access-change-management-for-root-ou_id-and-account_tag-scopes)
-  - [Import existing AWS IAM Identity Center access entitlements for management through the solution](#import-existing-aws-sso-access-entitlements-for-management-through-the-solution)
-  - [De-couple life cycle management of different SSO objects and other features](#de-couple-life-cycle-management-of-different-sso-objects-and-other-features)
-
-- [Detailed Building Blocks Overview](docs/documentation/Building-Blocks.md)
-- [Use case Flows](docs/documentation/Use-Case-Flows.md)
-- [Schema Details for account assignment and permission set operations](#schema-details-for-account-assignment-and-permission-set-operations)
-- [Scaling for large organizations](docs/documentation/Scaling.md)
-- [Using API interface for your use cases](#using-api-interface-for-your-use-cases)
-- [Using S3 interface for your use cases](#using-s3-interface-for-your-use-cases)
-- [Unicorn Rides use cases](https://catalog.workshops.aws/ssoextensions/en-US/03-usecases)
-- [AWS IAM Identity Center Region Switch](docs/documentation//Region-Switch.md)
-- [Troubleshooting](docs/documentation/TroubleShooting.md)
-- [Security](#security)
-- [License](#license)
+- [AWS IAM Identity Center Extensions For Enterprise](#aws-iam-identity-center-extensions-for-enterprise)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Features](#features)
+    - [The Composite Permission Set API](#the-composite-permission-set-api)
+    - [Enterprise friendly account assignment life cycle](#enterprise-friendly-account-assignment-life-cycle)
+    - [Automated access change management for root, ou\_id and account\_tag scopes](#automated-access-change-management-for-root-ou_id-and-account_tag-scopes)
+    - [Import existing AWS IAM Identity Center access entitlements for management through the solution](#import-existing-aws-iam-identity-center-access-entitlements-for-management-through-the-solution)
+    - [De-couple life cycle management of different SSO objects and other features](#de-couple-life-cycle-management-of-different-sso-objects-and-other-features)
+  - [Schema details for account assignment and permission set operations](#schema-details-for-account-assignment-and-permission-set-operations)
+  - [Using API interface for your use cases](#using-api-interface-for-your-use-cases)
+  - [Using S3 interface for your use cases](#using-s3-interface-for-your-use-cases)
+  - [Security](#security)
+  - [License](#license)
+  - [This library is licensed under the MIT-0 License. See the LICENSE file.](#this-library-is-licensed-under-the-mit-0-license-see-the-license-file)
 
 ## Overview
 
@@ -375,3 +369,4 @@ See [CONTRIBUTING](CONTRIBUTING.md) for more information.
 ## License
 
 This library is licensed under the MIT-0 License. See the LICENSE file.
+----
