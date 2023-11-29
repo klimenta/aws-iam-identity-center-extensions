@@ -1,5 +1,11 @@
 # AWS IAM Identity Center Extensions For Enterprise
 
+## Changes from the original repo
+
+- ./package.json - updated libraries
+- lib/lambda-functions/package.json - updated libraries
+- lib/lambda-layers/nodejs-layer/nodejs/package.json - updated libraries
+
 ## Table of Contents
 
 - [AWS IAM Identity Center Extensions For Enterprise](#aws-iam-identity-center-extensions-for-enterprise)
