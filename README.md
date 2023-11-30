@@ -11,10 +11,10 @@
 ## Lambdas updated to Node 20.x
 
 ## Prereq that I used on local machine
-aws - 2.13.38
-node - 18.18.2
-yarn - 1.22.21
-cdk - 2.110.1
+- aws - 2.13.38
+- node - 18.18.2
+- yarn - 1.22.21
+- cdk - 2.110.1
 
 ## Install
 Follow instruction at https://catalog.workshops.aws/ssoextensions/en-US/00-prerequisites
