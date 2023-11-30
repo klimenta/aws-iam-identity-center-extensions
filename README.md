@@ -5,6 +5,24 @@
 - ./package.json - updated libraries
 - lib/lambda-functions/package.json - updated libraries
 - lib/lambda-layers/nodejs-layer/nodejs/package.json - updated libraries
+- Removed yarn.lock files
+
+## Lambdas updated to Node 20.x
+
+## Prereq that I used on local machine
+aws - 2.13.38
+node - 18.18.2
+yarn - 1.22.21
+cdk - 2.110.1
+
+## Install
+Follow instruction at https://catalog.workshops.aws/ssoextensions/en-US/00-prerequisites
+- Once you reach "Setup Solution Code" after "git checkout -b main source/main" use "git push origin" not "git push -u origin source:main"
+- I removed yarn.lock files, use "yarn install" instead of "yarn install --frozen-lockfile"
+- Don't use "yarn prettier && yarn lint", it'll give you an error - optional step anyway
+
+## Issues
+Tested with S3 buckets instead of API, the removal of a json file from S3 target bucket in the permission_sets folder does not remove the permission set from IAM Center
 
 ## Table of Contents
 
