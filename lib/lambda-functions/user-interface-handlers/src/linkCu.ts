@@ -25,7 +25,7 @@ import {
   SNSClient,
   SNSServiceException,
 } from "@aws-sdk/client-sns";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
 import Ajv from "ajv";
 import { S3Event, S3EventRecord } from "aws-lambda";
 import { readFileSync } from "fs";
@@ -51,7 +51,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 
 const ajv = new Ajv({ allErrors: true });
@@ -113,13 +113,13 @@ export const handler = async (event: S3Event) => {
           principalName: keyValue[3],
           principalType: keyValue[4],
         };
-        await ddbDocClientObject.send(
-          new PutCommand({
+        await ddbDocClientObject.put(
+          {
             TableName: DdbTable,
             Item: {
               ...upsertData,
             },
-          })
+          }
         );
         logger(
           {

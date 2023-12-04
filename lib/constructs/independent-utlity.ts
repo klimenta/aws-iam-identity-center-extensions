@@ -7,7 +7,6 @@ import { Key } from "aws-cdk-lib/aws-kms";
 import {
   BlockPublicAccess,
   Bucket,
-  ObjectOwnership,
   BucketEncryption,
 } from "aws-cdk-lib/aws-s3";
 import { Topic } from "aws-cdk-lib/aws-sns";
@@ -82,7 +81,8 @@ export class IndependentUtility extends Construct {
       this,
       name(buildConfig, "accessLoggingBucket"),
       {
-        objectOwnership: ObjectOwnership.OBJECT_WRITER,
+        encryption: BucketEncryption.KMS,
+        encryptionKey: this.logsKey,
         blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
       }
     );
@@ -91,9 +91,10 @@ export class IndependentUtility extends Construct {
       this,
       name(buildConfig, "ssoArtefactsBucket"),
       {
+        encryption: BucketEncryption.KMS,
         versioned: false,
-        objectOwnership: ObjectOwnership.OBJECT_WRITER,
         blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+        encryptionKey: this.s3ArtefactsKey,
         serverAccessLogsBucket: logsBucket,
         serverAccessLogsPrefix: name(
           buildConfig,

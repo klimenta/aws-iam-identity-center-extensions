@@ -72,8 +72,7 @@ import {
 } from "@aws-sdk/client-sso-admin";
 import { fromTemporaryCredentials } from "@aws-sdk/credential-providers";
 import {
-  DynamoDBDocumentClient,
-  GetCommand,
+  DynamoDBDocument,
   GetCommandOutput,
 } from "@aws-sdk/lib-dynamodb";
 import { SNSEvent } from "aws-lambda";
@@ -95,7 +94,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 const sqsClientObject = new SQSClient({ region: AWS_REGION, maxAttempts: 2 });
 const sfnClientObject = new SFNClient({
@@ -192,13 +191,14 @@ export const handler = async (event: SNSEvent) => {
       PrincipalType: principalType,
     };
 
-    const permissionSetRecord: GetCommandOutput = await ddbDocClientObject.send(
-      new GetCommand({
+    const permissionSetRecord: GetCommandOutput = await ddbDocClientObject.query(
+      {
         TableName: permissionSetArnTable,
-        Key: {
-          permissionSetName: permissionsetName,
+        KeyConditionExpression: "permissionSetName = :permissionSetName",
+        ExpressionAttributeValues: {
+          ":permissionSetName": permissionsetName,
         },
-      })
+      }
     );
 
     if (permissionSetRecord.Item) {

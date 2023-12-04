@@ -10,7 +10,7 @@ const { globalPermissionSetTableName, AWS_REGION } = process.env;
 
 /** SDK and third party client imports */
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { SNSEvent } from "aws-lambda";
 import { v4 as uuidv4 } from "uuid";
 import { logModes, requestStatus } from "../../helpers/src/interfaces";
@@ -26,7 +26,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 
 export const handler = async (event: SNSEvent) => {
   /** Instantiate UUID based request ID for observability */
@@ -106,13 +106,13 @@ export const handler = async (event: SNSEvent) => {
       inlinePolicyDocument: computedInlinePolicy,
     });
     /** Upsert the permission set object in the global table */
-    await ddbDocClientObject.send(
-      new PutCommand({
+    await ddbDocClientObject.put(
+      {
         TableName: globalPermissionSetTableName,
         Item: {
           ...permissionSetObject,
         },
-      })
+      }
     );
 
     logger({

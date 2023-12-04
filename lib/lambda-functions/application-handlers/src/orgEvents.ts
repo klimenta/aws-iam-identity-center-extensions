@@ -60,7 +60,8 @@ import {
 } from "@aws-sdk/client-sso-admin";
 import { fromTemporaryCredentials } from "@aws-sdk/credential-providers";
 import {
-  DynamoDBDocumentClient,
+
+  DynamoDBDocument,
   GetCommand,
   GetCommandOutput,
   QueryCommand,
@@ -84,7 +85,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 const sqsClientObject = new SQSClient({ region: AWS_REGION, maxAttempts: 2 });
 const ssoAdminClientObject = new SSOAdminClient({
@@ -150,17 +151,17 @@ export const tagBasedDeProvisioning = async (
     functionLogMode
   );
   const relatedProvisionedLinks: QueryCommandOutput =
-    await ddbDocClientObject.send(
-      new QueryCommand({
-        TableName: provisionedLinksTable,
-        IndexName: "tagKeyLookUp",
-        KeyConditionExpression: "#tagKeyLookUp = :tagKeyLookUp",
-        ExpressionAttributeNames: { "#tagKeyLookUp": "tagKeyLookUp" },
-        ExpressionAttributeValues: {
-          ":tagKeyLookUp": tagKeyLookUpValue,
-        },
-      })
-    );
+      await ddbDocClientObject.query(
+        {
+          TableName: provisionedLinksTable,
+          IndexName: "tagKeyLookUp",
+          KeyConditionExpression: "#tagKeyLookUp = :tagKeyLookUp",
+          ExpressionAttributeNames: { "#tagKeyLookUp": "tagKeyLookUp" },
+          ExpressionAttributeValues: {
+            ":tagKeyLookUp": tagKeyLookUpValue,
+          },
+        }
+      );
 
   if (
     relatedProvisionedLinks.Items &&
@@ -270,15 +271,16 @@ export const orgEventProvisioning = async (
     );
   }
 
-  const relatedLinks: QueryCommandOutput = await ddbDocClientObject.send(
-    new QueryCommand({
+
+  const relatedLinks: QueryCommandOutput = await ddbDocClientObject.query(
+    {
       TableName: DdbTable,
       IndexName: "awsEntityData",
       KeyConditionExpression: "#awsEntityData = :awsEntityData",
       ExpressionAttributeNames: { "#awsEntityData": "awsEntityData" },
       ExpressionAttributeValues: { ":awsEntityData": entityData },
-    })
-  );
+    }
+  ) as QueryCommandOutput;
 
   if (relatedLinks.Items && relatedLinks.Items?.length !== 0) {
     logger(
@@ -295,16 +297,16 @@ export const orgEventProvisioning = async (
     await Promise.all(
       relatedLinks.Items.map(async (Item) => {
         const { principalType, principalName } = Item;
-        const permissionSetFetch: GetCommandOutput =
-          await ddbDocClientObject.send(
-            new GetCommand({
-              TableName: permissionSetArnTable,
-              Key: {
-                permissionSetName: Item.permissionSetName,
-              },
-            })
-          );
-        if (permissionSetFetch.Item) {
+        const permissionSetFetch = await ddbDocClientObject.query(
+          {
+            TableName: permissionSetArnTable,
+            KeyConditionExpression: "permissionSetName = :permissionSetName",
+            ExpressionAttributeValues: {
+              ":permissionSetName": Item.permissionSetName,
+            },
+          }
+        );
+        if (permissionSetFetch.Items) {
           let principalNameToLookUp = principalName;
           logger(
             {
@@ -363,7 +365,7 @@ export const orgEventProvisioning = async (
                   ssoParams: {
                     ...staticSSOPayload,
                     PrincipalId: principalId,
-                    PermissionSetArn: permissionSetFetch.Item.permissionSetArn,
+                    PermissionSetArn: permissionSetFetch.Items[0].permissionSetArn,
                     TargetId: targetId,
                   },
                   actionType: actionType,
@@ -382,7 +384,7 @@ export const orgEventProvisioning = async (
                 requestId: requestId,
                 status: requestStatus.Completed,
                 relatedData: entityData,
-                statusMessage: `Posted ${actionType} operation to account assignments handler for accountID ${targetId} , permissionSetArn ${permissionSetFetch.Item.permissionSetArn}`,
+                statusMessage: `Posted ${actionType} operation to account assignments handler for accountID ${targetId} , permissionSetArn ${permissionSetFetch.Items[0].permissionSetArn}`,
               },
               functionLogMode
             );

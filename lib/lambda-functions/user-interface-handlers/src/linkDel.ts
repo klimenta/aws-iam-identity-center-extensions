@@ -24,7 +24,7 @@ import {
   SNSClient,
   SNSServiceException,
 } from "@aws-sdk/client-sns";
-import { DeleteCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { DeleteCommand, DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import Ajv from "ajv";
 import { S3Event, S3EventRecord } from "aws-lambda";
 import { readFileSync } from "fs";
@@ -49,7 +49,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 
 const ajv = new Ajv({ allErrors: true });
@@ -102,13 +102,13 @@ export const handler = async (event: S3Event) => {
         );
         const { linkData } = payload;
         linkDataValue = linkData;
-        await ddbDocClientObject.send(
-          new DeleteCommand({
+        await ddbDocClientObject.delete(
+          {
             TableName: DdbTable,
             Key: {
               awsEntityId: linkData,
             },
-          })
+          }
         );
         logger(
           {

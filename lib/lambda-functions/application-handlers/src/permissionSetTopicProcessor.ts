@@ -79,7 +79,7 @@ import {
 import { fromTemporaryCredentials } from "@aws-sdk/credential-providers";
 import {
   DeleteCommand,
-  DynamoDBDocumentClient,
+  DynamoDBDocument,
   GetCommand,
   GetCommandOutput,
   UpdateCommand,
@@ -106,7 +106,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 const sqsClientObject = new SQSClient({ region: AWS_REGION, maxAttempts: 2 });
 
@@ -171,9 +171,9 @@ export const handler = async (event: SNSEvent) => {
     let reProvision = false;
     let updatePermissionSetAttributes = false;
     let currentSessionDuration = "";
+    const currentPermissionSetDescription = permissionSetName;
     let sortedManagedPoliciesArnList: Array<string> = [];
     let currentRelayState = "";
-    let currentPermissionSetDescription = permissionSetName;
     let sessionDurationPresent = false;
     let relayStatePresent = false;
 
@@ -189,13 +189,13 @@ export const handler = async (event: SNSEvent) => {
       functionLogMode
     );
 
-    const fetchPermissionSet: GetCommandOutput = await ddbDocClientObject.send(
-      new GetCommand({
+    const fetchPermissionSet: GetCommandOutput = await ddbDocClientObject.get(
+      {
         TableName: DdbTable,
         Key: {
           permissionSetName,
         },
-      })
+      }
     );
     if (fetchPermissionSet.Item) {
       logger(
@@ -331,17 +331,17 @@ export const handler = async (event: SNSEvent) => {
           }
         }
 
-        await ddbDocClientObject.send(
-          new UpdateCommand({
+        ddbDocClientObject.update(
+          {
             TableName: Arntable,
             Key: {
-              permissionSetName,
+              permissionSetName: permissionSetName,
             },
-            UpdateExpression: "set permissionSetArn=:arnvalue",
+            UpdateExpression: "set permissionSetArn = :arnvalue",
             ExpressionAttributeValues: {
               ":arnvalue": createOp.PermissionSet?.PermissionSetArn?.toString(),
             },
-          })
+          }
         );
         logger(
           {
@@ -571,15 +571,15 @@ export const handler = async (event: SNSEvent) => {
             functionLogMode
           );
         } else {
-          const fetchArn: GetCommandOutput = await ddbDocClientObject.send(
-            new GetCommand({
-              TableName: Arntable,
-              Key: {
-                permissionSetName,
-              },
-            })
-          );
-          if (fetchArn.Item) {
+          const fetchArn = ddbDocClientObject.query({
+            TableName: Arntable,
+            KeyConditionExpression: "permissionSetName = :permissionSetName",
+            ExpressionAttributeValues: {
+              ":permissionSetName": permissionSetName,
+            },
+          });
+          const fetchArnResult = await fetchArn;
+          if (fetchArnResult.Items) {
             logger(
               {
                 handler: handlerName,
@@ -606,14 +606,10 @@ export const handler = async (event: SNSEvent) => {
               sortedManagedPoliciesArnList =
                 currentItem.sortedManagedPoliciesArnList;
             }
-            if (
-              currentItem.description &&
-              currentItem.description.length !== 0
-            ) {
-              currentPermissionSetDescription = currentItem.description;
+            const fetchArnResult = await fetchArn;
+            if (fetchArnResult.Items) {
+              permissionSetArn = fetchArnResult.Items[0].permissionSetArn;
             }
-            permissionSetArn = fetchArn.Item.permissionSetArn;
-
             let k: keyof typeof diffCalculated;
             for (k in diffCalculated) {
               let changeType = "";
@@ -1408,38 +1404,40 @@ export const handler = async (event: SNSEvent) => {
           },
           functionLogMode
         );
-        const fetchArn = await ddbDocClientObject.send(
-          new GetCommand({
+        const fetchArn = await ddbDocClientObject.query(
+          {
             TableName: Arntable,
-            Key: {
-              permissionSetName,
+            KeyConditionExpression: 'permissionSetName = :name',
+            ExpressionAttributeValues: {
+              ':name': permissionSetName,
             },
-          })
+          }
         );
-        if (fetchArn.Item) {
-          permissionSetArn = fetchArn.Item.permissionSetArn;
+        if (fetchArn.Items) {
+          permissionSetArn = fetchArn.Items[0].permissionSetArn;
           await ssoAdminClientObject.send(
             new DeletePermissionSetCommand({
               InstanceArn: instanceArn,
               PermissionSetArn: permissionSetArn,
             })
           );
-          await ddbDocClientObject.send(
-            new DeleteCommand({
+          ddbDocClientObject.query(
+            {
               TableName: DdbTable,
-              Key: {
-                permissionSetName,
+              KeyConditionExpression: 'permissionSetName = :name',
+              ExpressionAttributeValues: {
+                ':name': permissionSetName,
               },
-            })
+            }
           );
-          await ddbDocClientObject.send(
-            new DeleteCommand({
-              TableName: Arntable,
-              Key: {
-                permissionSetName,
-              },
-            })
-          );
+          await ddbDocClientObject.query({
+            TableName: Arntable,
+            KeyConditionExpression: 'permissionSetName = :name',
+            ExpressionAttributeValues: {
+              ':name': permissionSetName,
+            },
+          });
+
           logger(
             {
               handler: handlerName,

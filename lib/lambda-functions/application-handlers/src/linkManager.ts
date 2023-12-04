@@ -58,8 +58,7 @@ import {
 import { fromTemporaryCredentials } from "@aws-sdk/credential-providers";
 import {
   DeleteCommand,
-  DynamoDBDocumentClient,
-  GetCommand,
+  DynamoDBDocument,
   GetCommandOutput,
   PutCommand,
 } from "@aws-sdk/lib-dynamodb";
@@ -78,7 +77,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 const ssoAdminClientObject = new SSOAdminClient({
   region: ssoRegion,
@@ -186,15 +185,13 @@ export const handler = async (event: SQSEvent) => {
               functionLogMode
             );
 
-            const provisionedLinks: GetCommandOutput =
-              await ddbDocClientObject.send(
-                new GetCommand({
-                  TableName: provisionedLinksTable,
-                  Key: {
-                    parentLink: provisionedLinksKey,
-                  },
-                })
-              );
+            const provisionedLinks: GetCommandOutput = await ddbDocClientObject.query({
+              TableName: provisionedLinksTable,
+              KeyConditionExpression: "parentLink = :parentLink",
+              ExpressionAttributeValues: {
+                ":parentLink": provisionedLinksKey,
+              },
+            });
             if (provisionedLinks.Item) {
               logger(
                 {
@@ -316,16 +313,15 @@ export const handler = async (event: SQSEvent) => {
               functionLogMode
             );
 
-            const provisionedLinks: GetCommandOutput =
-              await ddbDocClientObject.send(
-                new GetCommand({
-                  TableName: provisionedLinksTable,
-                  Key: {
-                    parentLink: provisionedLinksKey,
-                  },
-                })
-              );
-            if (provisionedLinks.Item) {
+            const provisionedLinks = await ddbDocClientObject.query({
+              TableName: provisionedLinksTable,
+              KeyConditionExpression: 'parentLink = :parentLink',
+              ExpressionAttributeValues: {
+                ':parentLink': provisionedLinksKey,
+              },
+            });
+
+            if (provisionedLinks.Items) {
               logger(
                 {
                   handler: handlerName,

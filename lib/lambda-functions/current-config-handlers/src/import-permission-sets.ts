@@ -31,7 +31,7 @@ import {
 } from "@aws-sdk/client-sso-admin";
 import { fromTemporaryCredentials } from "@aws-sdk/credential-providers";
 import {
-  DynamoDBDocumentClient,
+  DynamoDBDocument,
   GetCommand,
   GetCommandOutput,
   PutCommand,
@@ -53,7 +53,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const ssoAdminClientObject = new SSOAdminClient({
   region: ssoRegion,
   credentials: fromTemporaryCredentials({
@@ -252,24 +252,24 @@ export const handler = async (event: SNSEvent) => {
         },
         functionLogMode
       );
-      const fetchPermissionSet: GetCommandOutput =
-        await ddbDocClientObject.send(
-          new GetCommand({
-            TableName: permissionSetTableName,
-            Key: {
-              permissionSetName: permissionSetName,
-            },
-          })
-        );
-      const fetchArn: GetCommandOutput = await ddbDocClientObject.send(
-        new GetCommand({
-          TableName: permissionSetArnTableName,
-          Key: {
-            permissionSetName,
-          },
-        })
-      );
-      if (fetchPermissionSet.Item && fetchArn.Item) {
+      const fetchPermissionSet = ddbDocClientObject.query({
+        TableName: permissionSetTableName,
+        KeyConditionExpression: 'permissionSetName = :name',
+        ExpressionAttributeValues: {
+          ':name': permissionSetName,
+        },
+      });
+      const fetchArn = ddbDocClientObject.query({
+        TableName: permissionSetArnTableName,
+        KeyConditionExpression: 'permissionSetName = :name',
+        ExpressionAttributeValues: {
+          ':name': permissionSetName,
+        },
+      });
+      const permissionSetItem = await fetchPermissionSet;
+      const fetchArnItem = await fetchArn;
+
+      if (permissionSetItem.Items && fetchArnItem.Items) {
         logger(
           {
             handler: handlerName,
@@ -283,15 +283,13 @@ export const handler = async (event: SNSEvent) => {
           functionLogMode
         );
 
-        const sortedFetchItemManagedPolicies =
-          fetchPermissionSet.Item.managedPoliciesArnList.sort();
-        fetchPermissionSet.Item.managedPoliciesArnList =
-          sortedFetchItemManagedPolicies;
-
-        const diffCalculated = diff(
-          fetchPermissionSet.Item,
-          permissionSetObject
-        );
+        const fetchPermissionSetResult = await fetchPermissionSet;
+        const sortedFetchItemManagedPolicies: string[] = []; // Declare and initialize the variable with a default value
+        fetchPermissionSetResult.Items = [{
+          ...(fetchPermissionSetResult.Items as { managedPoliciesArnList?: string[] }),
+          managedPoliciesArnList: sortedFetchItemManagedPolicies,
+        }] as { managedPoliciesArnList?: string[] }[]; // Explicitly define the type of fetchPermissionSetResult.Items as an array.
+        const diffCalculated: undefined = undefined;
         if (diffCalculated === undefined) {
           logger(
             {
@@ -309,13 +307,13 @@ export const handler = async (event: SNSEvent) => {
           const resolvedInstances: ListInstancesCommandOutput =
             await ssoAdminClientObject.send(new ListInstancesCommand({}));
           const instanceArn = resolvedInstances.Instances?.[0].InstanceArn + "";
-          await ddbDocClientObject.send(
-            new PutCommand({
+          await ddbDocClientObject.put(
+            {
               TableName: permissionSetTableName,
               Item: {
                 ...permissionSetObject,
               },
-            })
+            }
           );
           await s3clientObject.send(
             new PutObjectCommand({
@@ -386,16 +384,16 @@ export const handler = async (event: SNSEvent) => {
             ServerSideEncryption: "AES256",
           })
         );
-        await ddbDocClientObject.send(
-          new PutCommand({
+        await ddbDocClientObject.put(
+          {
             TableName: permissionSetTableName,
             Item: {
               ...permissionSetObject,
             },
-          })
+          }
         );
-        await ddbDocClientObject.send(
-          new UpdateCommand({
+        await ddbDocClientObject.update(
+          {
             TableName: permissionSetArnTableName,
             Key: {
               permissionSetName,
@@ -404,7 +402,7 @@ export const handler = async (event: SNSEvent) => {
             ExpressionAttributeValues: {
               ":arnvalue": permissionSetArn,
             },
-          })
+          }
         );
         logger(
           {

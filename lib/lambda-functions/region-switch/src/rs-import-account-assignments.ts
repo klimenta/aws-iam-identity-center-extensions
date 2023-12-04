@@ -7,7 +7,7 @@
 /** Get environment variables */
 const { globalAccountAssignmentsTableName, AWS_REGION } = process.env;
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocument, PutCommand } from "@aws-sdk/lib-dynamodb";
 /** SDK and third party client imports */
 import { SNSEvent } from "aws-lambda";
 import { v4 as uuidv4 } from "uuid";
@@ -27,7 +27,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 
 export const handler = async (event: SNSEvent) => {
   /** Instantiate UUID based request ID for observability */
@@ -56,13 +56,13 @@ export const handler = async (event: SNSEvent) => {
       statusMessage: `Region switch account assignment import operation in progress`,
     });
     /** Upsert account assignment data into the global table */
-    await ddbDocClientObject.send(
-      new PutCommand({
+    await ddbDocClientObject.put(
+      {
         TableName: globalAccountAssignmentsTableName,
         Item: {
           ...linkParams,
         },
-      })
+      }
     );
     logger({
       handler: "rs-accountAssignmentImporter",

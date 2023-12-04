@@ -26,7 +26,7 @@ import {
   SNSClient,
   SNSServiceException,
 } from "@aws-sdk/client-sns";
-import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocument, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { S3Event, S3EventRecord } from "aws-lambda";
 import { v4 as uuidv4 } from "uuid";
 import { logModes, requestStatus } from "../../helpers/src/interfaces";
@@ -41,7 +41,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 
 const handlerName = AWS_LAMBDA_FUNCTION_NAME + "";
@@ -80,17 +80,15 @@ export const handler = async (event: S3Event) => {
           },
           functionLogMode
         );
-        const relatedLinks = await ddbDocClientObject.send(
-          new QueryCommand({
-            TableName: linksTable,
-            IndexName: "permissionSetName",
-            KeyConditionExpression: "#permissionSetName = :permissionSetName",
-            ExpressionAttributeNames: {
-              "#permissionSetName": "permissionSetName",
-            },
-            ExpressionAttributeValues: { ":permissionSetName": keyValue },
-          })
-        );
+        const relatedLinks = await ddbDocClientObject.query({
+          TableName: linksTable,
+          KeyConditionExpression: "#permissionSetName = :permissionSetName",
+          ExpressionAttributeNames: {
+            "#permissionSetName": "permissionSetName",
+          },
+          ExpressionAttributeValues: { ":permissionSetName": keyValue },
+          IndexName: "permissionSetName",
+        });
         logger(
           {
             handler: handlerName,

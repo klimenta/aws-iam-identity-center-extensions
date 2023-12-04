@@ -57,8 +57,7 @@ import {
 } from "@aws-sdk/client-sso-admin";
 import { fromTemporaryCredentials } from "@aws-sdk/credential-providers";
 import {
-  DynamoDBDocumentClient,
-  QueryCommand,
+  DynamoDBDocument,
   QueryCommandOutput,
 } from "@aws-sdk/lib-dynamodb";
 import { SNSEvent } from "aws-lambda";
@@ -81,7 +80,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 const sqsClientObject = new SQSClient({ region: AWS_REGION, maxAttempts: 2 });
 
@@ -131,8 +130,8 @@ export const handler = async (event: SNSEvent) => {
   try {
     const message = JSON.parse(event.Records[0].Sns.Message);
     permissionSetName = message.permission_set_name;
-    const relatedLinks: QueryCommandOutput = await ddbDocClientObject.send(
-      new QueryCommand({
+    const relatedLinks: QueryCommandOutput = await ddbDocClientObject.query(
+      {
         TableName: linksTableName,
         IndexName: "permissionSetName",
         KeyConditionExpression: "#permissionSetName = :permissionSetName",
@@ -140,7 +139,7 @@ export const handler = async (event: SNSEvent) => {
         ExpressionAttributeValues: {
           ":permissionSetName": message.permission_set_name,
         },
-      })
+      }
     );
     logger(
       {

@@ -58,10 +58,8 @@ import {
 } from "@aws-sdk/client-sso-admin";
 import { fromTemporaryCredentials } from "@aws-sdk/credential-providers";
 import {
-  DynamoDBDocumentClient,
-  GetCommand,
-  GetCommandOutput,
-  QueryCommand,
+  DynamoDBDocument,
+
   QueryCommandOutput,
 } from "@aws-sdk/lib-dynamodb";
 import { SNSEvent } from "aws-lambda";
@@ -83,7 +81,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 const sqsClientObject = new SQSClient({ region: AWS_REGION, maxAttempts: 2 });
 const ssoAdminClientObject = new SSOAdminClient({
@@ -214,16 +212,16 @@ export const handler = async (event: SNSEvent) => {
         functionLogMode
       );
 
-      const relatedLinks: QueryCommandOutput = await ddbDocClientObject.send(
+      const relatedLinks: QueryCommandOutput = await ddbDocClientObject.query(
         // QueryCommand is a pagniated call, however the logic requires
         // checking only if the result set is greater than 0
-        new QueryCommand({
+        {
           TableName: linkstable,
           IndexName: "principalName",
           KeyConditionExpression: "#principalName = :principalName",
           ExpressionAttributeNames: { "#principalName": "principalName" },
           ExpressionAttributeValues: { ":principalName": userName },
-        })
+        }
       );
 
       if (relatedLinks.Items && relatedLinks.Items?.length !== 0) {
@@ -241,17 +239,15 @@ export const handler = async (event: SNSEvent) => {
         await Promise.all(
           relatedLinks.Items?.map(async (Item) => {
             const { awsEntityType, awsEntityData, permissionSetName } = Item;
-            const permissionSetFetch: GetCommandOutput =
-              await ddbDocClientObject.send(
-                new GetCommand({
-                  TableName: permissionarntable,
-                  Key: {
-                    permissionSetName: permissionSetName,
-                  },
-                })
-              );
-            if (permissionSetFetch.Item) {
-              const { permissionSetArn } = permissionSetFetch.Item;
+            const permissionSetFetch = await ddbDocClientObject.query({
+              TableName: permissionarntable,
+              KeyConditionExpression: "permissionSetName = :permissionSetName",
+              ExpressionAttributeValues: {
+                ":permissionSetName": permissionSetName,
+              },
+            });
+            if (permissionSetFetch.Items) {
+              const { permissionSetArn } = permissionSetFetch.Items[0];
               if (awsEntityType === "account") {
                 await sqsClientObject.send(
                   new SendMessageCommand({

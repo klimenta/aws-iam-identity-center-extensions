@@ -19,9 +19,8 @@ import {
   S3ServiceException,
 } from "@aws-sdk/client-s3";
 import {
-  DynamoDBDocumentClient,
-  GetCommand,
-  GetCommandOutput,
+  DynamoDBDocument,
+
   PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 // SDK and third party client imports
@@ -42,7 +41,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const s3clientObject = new S3Client({ region: AWS_REGION, maxAttempts: 2 });
 
 const handlerName = AWS_LAMBDA_FUNCTION_NAME + "";
@@ -97,15 +96,15 @@ export const handler = async (event: SNSEvent) => {
         },
         functionLogMode
       );
-      const provisionedLinks: GetCommandOutput = await ddbDocClientObject.send(
-        new GetCommand({
-          TableName: provisionedLinksTableName,
-          Key: {
-            parentLink: provisionedLinksKey,
-          },
-        })
-      );
-      if (provisionedLinks.Item) {
+      const provisionedLinks = ddbDocClientObject.query({
+        TableName: provisionedLinksTableName,
+        KeyConditionExpression: "parentLink = :parentLink",
+        ExpressionAttributeValues: {
+          ":parentLink": provisionedLinksKey,
+        },
+      });
+      const provisionedLinksResult = await provisionedLinks;
+      if (provisionedLinksResult.Items) {
         logger(
           {
             handler: handlerName,
@@ -146,13 +145,13 @@ export const handler = async (event: SNSEvent) => {
             ServerSideEncryption: "AES256",
           })
         );
-        await ddbDocClientObject.send(
-          new PutCommand({
+        await ddbDocClientObject.put(
+         {
             TableName: linksTableName,
             Item: {
               ...linkParams,
             },
-          })
+          }
         );
         await ddbClientObject.send(
           new PutCommand({

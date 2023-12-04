@@ -32,7 +32,7 @@ import {
 } from "@aws-sdk/client-sns";
 import {
   DeleteCommand,
-  DynamoDBDocumentClient,
+  DynamoDBDocument,
   PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
@@ -60,7 +60,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const s3clientObject = new S3Client({ region: AWS_REGION, maxAttempts: 2 });
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 const ajv = new Ajv({ allErrors: true });
@@ -165,13 +165,13 @@ export const handler = async (
           functionLogMode
         );
 
-        await ddbDocClientObject.send(
-          new PutCommand({
+        await ddbDocClientObject.put(
+          {
             TableName: DdbTable,
             Item: {
               ...linkParams,
             },
-          })
+          }
         );
         logger(
           {
@@ -249,13 +249,13 @@ export const handler = async (
           },
           functionLogMode
         );
-        await ddbDocClientObject.send(
-          new DeleteCommand({
+        await ddbDocClientObject.delete(
+          {
             TableName: DdbTable,
             Key: {
               awsEntityId: linkData,
             },
-          })
+          }
         );
         logger(
           {

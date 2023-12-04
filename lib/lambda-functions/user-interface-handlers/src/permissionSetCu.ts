@@ -31,7 +31,7 @@ import {
   SNSServiceException,
 } from "@aws-sdk/client-sns";
 import {
-  DynamoDBDocumentClient,
+  DynamoDBDocument,
   GetCommand,
   GetCommandOutput,
   PutCommand,
@@ -63,7 +63,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 const s3clientObject = new S3Client({ region: AWS_REGION, maxAttempts: 2 });
 
@@ -163,13 +163,13 @@ export const handler = async (event: S3Event) => {
          * to topic processor and determining if it's a create/update operation
          */
         const fetchPermissionSet: GetCommandOutput =
-          await ddbDocClientObject.send(
-            new GetCommand({
+          await ddbDocClientObject.get(
+            {
               TableName: DdbTable,
               Key: {
                 permissionSetName: upsertData.permissionSetName,
               },
-            })
+            }
           );
         logger(
           {
@@ -182,13 +182,13 @@ export const handler = async (event: S3Event) => {
           },
           functionLogMode
         );
-        await ddbDocClientObject.send(
-          new PutCommand({
+        await ddbDocClientObject.put(
+          {
             TableName: DdbTable,
             Item: {
               ...upsertData,
             },
-          })
+          }
         );
         logger(
           {

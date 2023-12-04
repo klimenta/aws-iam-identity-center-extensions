@@ -32,7 +32,7 @@ import {
   SNSServiceException,
 } from "@aws-sdk/client-sns";
 import {
-  DynamoDBDocumentClient,
+  DynamoDBDocument,
   GetCommand,
   GetCommandOutput,
   PutCommand,
@@ -65,7 +65,7 @@ const ddbClientObject = new DynamoDBClient({
   region: AWS_REGION,
   maxAttempts: 2,
 });
-const ddbDocClientObject = DynamoDBDocumentClient.from(ddbClientObject);
+const ddbDocClientObject = DynamoDBDocument.from(ddbClientObject);
 const s3clientObject = new S3Client({ region: AWS_REGION, maxAttempts: 2 });
 const snsClientObject = new SNSClient({ region: AWS_REGION, maxAttempts: 2 });
 
@@ -174,13 +174,13 @@ export const handler = async (
           functionLogMode
         );
         const fetchPermissionSet: GetCommandOutput =
-          await ddbDocClientObject.send(
-            new GetCommand({
+          await ddbDocClientObject.get(
+            {
               TableName: DdbTable,
               Key: {
                 permissionSetName: permissionSetName,
               },
-            })
+            }
           );
         logger(
           {
@@ -193,13 +193,13 @@ export const handler = async (
           },
           functionLogMode
         );
-        await ddbDocClientObject.send(
-          new PutCommand({
+        await ddbDocClientObject.put(
+          {
             TableName: DdbTable,
             Item: {
               ...payload.permissionSetData,
             },
-          })
+          }
         );
         logger(
           {
@@ -293,12 +293,12 @@ export const handler = async (
           functionLogMode
         );
         permissionSetName = payload.permissionSetData.permissionSetName;
-        const relatedLinks: QueryCommandOutput = await ddbDocClientObject.send(
+        const relatedLinks = await ddbDocClientObject.query(
           // QueryCommand is a pagniated call, however the logic requires
           // checking only if the result set is greater than 0
-          new QueryCommand({
+          {
             TableName: linksTable,
-            IndexName: "permissionSetName",
+            IndexName: "permissionSetName-index",
             KeyConditionExpression: "#permissionSetName = :permissionSetName",
             ExpressionAttributeNames: {
               "#permissionSetName": "permissionSetName",
@@ -306,7 +306,7 @@ export const handler = async (
             ExpressionAttributeValues: {
               ":permissionSetName": payload.permissionSetData.permissionSetName,
             },
-          })
+          }
         );
         logger(
           {
