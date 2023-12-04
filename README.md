@@ -6,9 +6,8 @@
 - lib/lambda-functions/package.json - updated libraries
 - lib/lambda-layers/nodejs-layer/nodejs/package.json - updated libraries
 - Removed yarn.lock files
-- Changed independent-utlity.ts under lib/constructs: removed KMS encryption, added ObjectOwnership for the logsBucket and ssoArtefactsBucket dues to some S3/CDK changes (https://github.com/aws/aws-cdk/issues/25358)
-
-## Lambdas updated to Node 20.x
+- Updated TypeScript lambda functions under lib/
+- Changed independent-utlity.ts under lib/constructs: added ObjectOwnership for the logsBucket and ssoArtefactsBucket dues to some S3/CDK changes (https://github.com/aws/aws-cdk/issues/25358)
 
 ## Prereq that I used on local machine
 - aws - 2.13.38
